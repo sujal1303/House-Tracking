@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import './App.css'
 import { trackEvent, trackPageView } from './analytics.js'
 
@@ -52,9 +52,23 @@ const milestones = [
   { title: 'Interior Material Finalization', owner: 'Interior', status: 'Upcoming', date: 'April 03' },
 ]
 
+const getStoredSession = () => {
+  const raw = localStorage.getItem('houseTrackingSession')
+  return raw ? JSON.parse(raw) : null
+}
+
+const setStoredSession = (session) => {
+  localStorage.setItem('houseTrackingSession', JSON.stringify(session))
+}
+
 const fetchJson = async (url, options = {}) => {
+  const session = getStoredSession()
   const response = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+      ...(options.headers ?? {}),
+    },
     ...options,
   })
   const data = await response.json()
@@ -64,6 +78,7 @@ const fetchJson = async (url, options = {}) => {
 
 function App() {
   const location = useLocation()
+  const [session, setSession] = useState(() => getStoredSession())
   const [projects, setProjects] = useState([])
   const [timeline, setTimeline] = useState([])
   const [documents, setDocuments] = useState([])
@@ -75,6 +90,11 @@ function App() {
   const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
+    if (!session?.token) {
+      setIsLoading(false)
+      return
+    }
+
     const loadData = async () => {
       try {
         const [projectsData, updatesData, documentsData, approvalsData] = await Promise.all([
@@ -94,7 +114,7 @@ function App() {
       }
     }
     loadData()
-  }, [])
+  }, [session?.token])
 
   useEffect(() => {
     trackPageView(`${location.pathname}${location.search}`)
@@ -153,14 +173,14 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/login/customer" element={<AuthPage role="customer" dashboardLink="/dashboard/customer" />} />
-      <Route path="/login/provider" element={<AuthPage role="provider" dashboardLink="/dashboard/provider" />} />
-      <Route path="/dashboard/customer" element={<CustomerDashboard projects={projects} notice={projectNotice} isLoading={isLoading} loadError={loadError} onCreateProject={addProject} />} />
-      <Route path="/dashboard/provider" element={<ProviderDashboard isLoading={isLoading} loadError={loadError} />} />
-      <Route path="/projects/details" element={<ProjectDetailsPage projects={projects} isLoading={isLoading} loadError={loadError} />} />
-      <Route path="/updates" element={<UpdatesPage timeline={timeline} isLoading={isLoading} loadError={loadError} onAddUpdate={addTimelineEntry} />} />
-      <Route path="/documents" element={<DocumentsPage documents={documents} notice={documentNotice} isLoading={isLoading} loadError={loadError} onAddDocument={addDocument} />} />
-      <Route path="/approvals" element={<ApprovalsPage approvals={approvals} notice={approvalNotice} isLoading={isLoading} loadError={loadError} onUpdateStatus={updateApprovalStatus} />} />
+      <Route path="/login/customer" element={<AuthPage role="customer" dashboardLink="/dashboard/customer" onLoginSuccess={setSession} />} />
+      <Route path="/login/provider" element={<AuthPage role="provider" dashboardLink="/dashboard/provider" onLoginSuccess={setSession} />} />
+      <Route path="/dashboard/customer" element={<ProtectedRoute session={session} redirectPath="/login/customer"><CustomerDashboard projects={projects} notice={projectNotice} isLoading={isLoading} loadError={loadError} onCreateProject={addProject} /></ProtectedRoute>} />
+      <Route path="/dashboard/provider" element={<ProtectedRoute session={session} redirectPath="/login/provider"><ProviderDashboard isLoading={isLoading} loadError={loadError} /></ProtectedRoute>} />
+      <Route path="/projects/details" element={<ProtectedRoute session={session} redirectPath="/login/customer"><ProjectDetailsPage projects={projects} isLoading={isLoading} loadError={loadError} /></ProtectedRoute>} />
+      <Route path="/updates" element={<ProtectedRoute session={session} redirectPath="/login/provider"><UpdatesPage timeline={timeline} isLoading={isLoading} loadError={loadError} onAddUpdate={addTimelineEntry} /></ProtectedRoute>} />
+      <Route path="/documents" element={<ProtectedRoute session={session} redirectPath="/login/customer"><DocumentsPage documents={documents} notice={documentNotice} isLoading={isLoading} loadError={loadError} onAddDocument={addDocument} /></ProtectedRoute>} />
+      <Route path="/approvals" element={<ProtectedRoute session={session} redirectPath="/login/provider"><ApprovalsPage approvals={approvals} notice={approvalNotice} isLoading={isLoading} loadError={loadError} onUpdateStatus={updateApprovalStatus} /></ProtectedRoute>} />
     </Routes>
   )
 }
@@ -200,6 +220,7 @@ function HomePage() {
           </div>
         </div>
       </section>
+      
       <section className="services-section">
         <div className="section-heading">
           <p className="eyebrow">Core Services</p>
@@ -218,7 +239,7 @@ function HomePage() {
   )
 }
 
-function AuthPage({ role, dashboardLink }) {
+function AuthPage({ role, dashboardLink, onLoginSuccess }) {
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '', code: '' })
   const [errors, setErrors] = useState({})
@@ -262,10 +283,13 @@ function AuthPage({ role, dashboardLink }) {
     try {
       setErrors({})
       setSubmitError('')
-      await fetchJson('/api/auth/login', {
+      const response = await fetchJson('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: form.email, password: form.password, role }),
       })
+      const nextSession = { token: response.token, user: response.user }
+      setStoredSession(nextSession)
+      onLoginSuccess(nextSession)
       trackEvent('login_success', {
         login_role: role,
       })
@@ -700,6 +724,14 @@ function WorkspacePage({ mode, title, subtitle, badge, children }) {
       </main>
     </div>
   )
+}
+
+function ProtectedRoute({ session, redirectPath, children }) {
+  if (!session?.token) {
+    return <Navigate to={redirectPath} replace />
+  }
+
+  return children
 }
 
 function QuickLinks({ compact = false }) {
