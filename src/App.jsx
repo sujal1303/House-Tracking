@@ -53,12 +53,33 @@ const milestones = [
 ]
 
 const getStoredSession = () => {
-  const raw = localStorage.getItem('houseTrackingSession')
-  return raw ? JSON.parse(raw) : null
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  try {
+    const raw = localStorage.getItem('houseTrackingSession')
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    localStorage.removeItem('houseTrackingSession')
+    return null
+  }
 }
 
 const setStoredSession = (session) => {
+  if (typeof window === 'undefined') {
+    return
+  }
+
   localStorage.setItem('houseTrackingSession', JSON.stringify(session))
+}
+
+const clearStoredSession = () => {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  localStorage.removeItem('houseTrackingSession')
 }
 
 const fetchJson = async (url, options = {}) => {
@@ -108,6 +129,10 @@ function App() {
         setDocuments(documentsData)
         setApprovals(approvalsData)
       } catch (error) {
+        if (error.message === 'Invalid or expired token.' || error.message === 'Authentication required.') {
+          clearStoredSession()
+          setSession(null)
+        }
         setLoadError(error.message)
       } finally {
         setIsLoading(false)
