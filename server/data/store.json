@@ -1,0 +1,117 @@
+{
+  "users": [
+    {
+      "id": "cust-1",
+      "role": "customer",
+      "email": "customer@housetracking.com",
+      "password": "customer123",
+      "name": "Aarav Sharma"
+    },
+    {
+      "id": "prov-1",
+      "role": "provider",
+      "email": "provider@housetracking.com",
+      "password": "provider123",
+      "name": "Studio Axis"
+    }
+  ],
+  "projects": [
+    {
+      "id": "project-1774455969383",
+      "name": "Sujal Patil",
+      "service": "Architecture",
+      "status": "Planning",
+      "progress": 25
+    },
+    {
+      "id": "project-1",
+      "name": "Lakeview Villa",
+      "service": "Architecture",
+      "status": "Concept review",
+      "progress": 72
+    },
+    {
+      "id": "project-2",
+      "name": "Palm Residency",
+      "service": "Interior",
+      "status": "Material selection",
+      "progress": 58
+    },
+    {
+      "id": "project-3",
+      "name": "Skyline House",
+      "service": "Structural",
+      "status": "Site inspection",
+      "progress": 84
+    }
+  ],
+  "updates": [
+    {
+      "id": "update-1774542587761",
+      "title": "interior",
+      "detail": "make the interior nice",
+      "time": "Just now"
+    },
+    {
+      "id": "update-1",
+      "title": "Foundation inspection completed",
+      "detail": "Structural team uploaded inspection images and notes.",
+      "time": "2 hours ago"
+    },
+    {
+      "id": "update-2",
+      "title": "Kitchen material set revised",
+      "detail": "Interior team replaced laminate options with stone-finish alternatives.",
+      "time": "Yesterday"
+    },
+    {
+      "id": "update-3",
+      "title": "Elevation markup shared",
+      "detail": "Architecture team published front-elevation comments for customer review.",
+      "time": "March 24"
+    }
+  ],
+  "documents": [
+    {
+      "id": "document-1",
+      "name": "Ground Floor Layout.pdf",
+      "type": "Architecture",
+      "status": "Approved"
+    },
+    {
+      "id": "document-2",
+      "name": "Beam Calculation Sheet.xlsx",
+      "type": "Structural",
+      "status": "Pending Review"
+    },
+    {
+      "id": "document-3",
+      "name": "Living Room Moodboard.fig",
+      "type": "Interior",
+      "status": "Latest Version"
+    }
+  ],
+  "approvals": [
+    {
+      "id": "approval-1",
+      "item": "Front elevation design",
+      "owner": "Customer",
+      "due": "March 26",
+      "status": "Approved"
+    },
+    {
+      "id": "approval-2",
+      "item": "Structural beam revision",
+      "owner": "Engineer",
+      "due": "March 27",
+      "status": "Approved"
+    },
+    {
+      "id": "approval-3",
+      "item": "Kitchen material palette",
+      "owner": "Customer",
+      "due": "March 29",
+      "status": "Approved"
+    }
+  ]
+}
